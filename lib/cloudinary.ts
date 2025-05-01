@@ -10,13 +10,27 @@ cloudinary.config({
 export async function uploadImageFromUrl(imageUrl: string, prompt: string): Promise<string> {
   try {
     const result = await cloudinary.uploader.upload(imageUrl, {
-      folder: 'logo-master',
+      folder: 'logo-gpt',
       public_id: `logo-${Date.now()}`,
       tags: ['logo', 'ai-generated'],
       context: `prompt=${prompt}`,
     });
 
     return result.secure_url;
+  } catch (error) {
+    console.error('Error uploading image to Cloudinary:', error);
+    throw new Error('Failed to upload image. Please try again later.');
+  }
+}
+
+export const uploadImageToCloudinary = async (imageUrl: string) => {
+  try {
+    const result = await cloudinary.uploader.upload(imageUrl, {
+      folder: 'logo-gpt',
+      // ... rest of the configuration ...
+    });
+
+    // ... rest of the file ...
   } catch (error) {
     console.error('Error uploading image to Cloudinary:', error);
     throw new Error('Failed to upload image. Please try again later.');

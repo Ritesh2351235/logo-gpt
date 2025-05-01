@@ -17,28 +17,32 @@ export async function generateLogo(prompt: string): Promise<string> {
       throw new Error("OpenAI API key is missing");
     }
 
-    console.log('Generating logo with prompt:', prompt);
+    console.log('Generating logo with GPT-Image-1 model:', prompt);
 
+    // Using the GPT-Image-1 model
     const response = await openai.images.generate({
-      model: "dall-e-3",
+      model: "gpt-image-1",
       prompt: `Create a professional, minimalist logo for: ${prompt}. The logo should be clean, modern, and suitable for business use.`,
       n: 1,
-      size: "1024x1024",
-      quality: "standard",
-      response_format: "url",
+      quality: "medium",
+      // Note: GPT-Image-1 might have different parameters than DALL-E 3
+      // Size and quality might be handled differently
     });
 
-    console.log('OpenAI API Response:', JSON.stringify(response, null, 2));
+    console.log('OpenAI API Response received');
 
     if (!response.data || response.data.length === 0) {
       throw new Error("No image generated");
     }
 
-    const imageUrl = response.data[0].url;
-    if (!imageUrl) {
-      throw new Error("No image URL received from OpenAI");
+    // Extract the base64 data
+    const base64Data = response.data[0].b64_json;
+    if (!base64Data) {
+      throw new Error("No base64 image data received from OpenAI");
     }
 
+    // Convert the base64 data to a data URL
+    const imageUrl = `data:image/png;base64,${base64Data}`;
     return imageUrl;
   } catch (error: any) {
     // Log the full error object

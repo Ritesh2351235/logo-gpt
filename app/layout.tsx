@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Logo Master - AI Logo Generator',
-  description: 'Create beautiful, professional logos for your brand with AI',
+  title: 'LogoGPT - AI Logo Generator',
+  description: 'Create professional logos instantly with AI.',
 }
 
 export default function RootLayout({

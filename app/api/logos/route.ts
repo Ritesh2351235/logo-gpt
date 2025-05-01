@@ -29,11 +29,13 @@ export async function POST(req: Request) {
 
     const dbUser = await userService.findOrCreateUser(userId, email);
 
-    // Upload to S3
-    const s3Url = await uploadImageToS3FromUrl(imageUrl);
+    // Upload to S3 or local storage (our function now handles both URLs and base64 data)
+    console.log("Saving logo to storage...");
+    const storedImageUrl = await uploadImageToS3FromUrl(imageUrl);
 
     // Save logo to database
-    const logo = await logoService.createLogo(dbUser.id, prompt, s3Url);
+    const logo = await logoService.createLogo(dbUser.id, prompt, storedImageUrl);
+    console.log("Logo saved successfully with ID:", logo.id);
 
     return NextResponse.json(logo);
   } catch (error) {

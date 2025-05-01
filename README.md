@@ -1,4 +1,4 @@
-# Logo Master - AI Logo Generation SaaS
+# LogoGPT - AI Logo Generation SaaS
 
 A full-stack SaaS application for AI-powered logo generation using Next.js, Clerk Auth, OpenAI, and more.
 
@@ -34,8 +34,8 @@ A full-stack SaaS application for AI-powered logo generation using Next.js, Cler
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/logo-master.git
-   cd logo-master
+   git clone https://github.com/yourusername/logo-gpt.git
+   cd logo-gpt
    ```
 
 2. Install dependencies:

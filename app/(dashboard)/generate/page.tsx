@@ -21,7 +21,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Sparkles, Save, ArrowRight, LightbulbIcon } from "lucide-react";
+import { Sparkles, Save, ArrowRight, LightbulbIcon, Download, FileType } from "lucide-react";
+import { BlurFade } from "@/components/magicui/blur-fade";
+import { BlurFadeText } from "@/components/magicui/blur-fade-text";
 
 const formSchema = z.object({
   prompt: z.string().min(10, {
@@ -44,6 +46,7 @@ export default function GenerateLogoPage() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDownloadingKit, setIsDownloadingKit] = useState(false);
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const router = useRouter();
 
@@ -119,6 +122,51 @@ export default function GenerateLogoPage() {
     }
   }
 
+  async function downloadLogoKit() {
+    if (!imageUrl) return;
+
+    try {
+      setIsDownloadingKit(true);
+
+      // In a real app, this would call a backend endpoint that generates
+      // and returns a zip file with different formats of the logo
+      const response = await fetch("/api/logo-kit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          imageUrl,
+          prompt: form.getValues("prompt"),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate logo kit");
+      }
+
+      // Get the blob from the response
+      const blob = await response.blob();
+
+      // Create a link to download the file
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      a.download = "logo-kit.zip";
+      document.body.appendChild(a);
+      a.click();
+
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Error downloading logo kit:", error);
+    } finally {
+      setIsDownloadingKit(false);
+    }
+  }
+
   function handleViewDashboard() {
     setSuccessDialogOpen(false);
     router.push("/dashboard");
@@ -131,18 +179,20 @@ export default function GenerateLogoPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Generate Logo</h1>
-        <p className="text-neutral-500 dark:text-neutral-400">
-          Describe your ideal logo and our AI will create it for you in seconds.
-        </p>
-      </div>
+    <div className="max-w-5xl mx-auto px-4 py-4">
+      <BlurFade delay={0.1} inView>
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl mb-2">Create with LogoGPT</h1>
+          <p className="text-xl text-neutral-600 dark:text-neutral-400">
+            Describe your ideal logo and our AI will create it for you in seconds.
+          </p>
+        </div>
+      </BlurFade>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-        <div className="space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <BlurFade delay={0.2} inView className="space-y-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
               <FormField
                 control={form.control}
                 name="prompt"
@@ -153,18 +203,18 @@ export default function GenerateLogoPage() {
                       <Textarea
                         placeholder="E.g., Modern logo for a tech startup with blue and purple gradients, minimalist design with a circuit board pattern"
                         {...field}
-                        className="min-h-24 resize-none"
+                        className="min-h-24 resize-none rounded-lg focus-visible:ring-blue-500"
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <div className="flex gap-4">
+              <div className="flex flex-wrap gap-3">
                 <Button
                   type="submit"
                   disabled={isGenerating}
-                  className="px-5"
+                  className="px-6 py-6 rounded-full"
                 >
                   {isGenerating ? (
                     <>
@@ -179,126 +229,151 @@ export default function GenerateLogoPage() {
                   )}
                 </Button>
                 {imageUrl && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={saveLogo}
-                    disabled={isSaving}
-                  >
-                    {isSaving ? "Saving..." : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        Save Logo
-                      </>
-                    )}
-                  </Button>
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={saveLogo}
+                      disabled={isSaving}
+                      className="rounded-full"
+                    >
+                      {isSaving ? "Saving..." : (
+                        <>
+                          <Save className="mr-2 h-4 w-4" />
+                          Save Logo
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={downloadLogoKit}
+                      disabled={isDownloadingKit}
+                      className="rounded-full"
+                    >
+                      {isDownloadingKit ? "Preparing..." : (
+                        <>
+                          <FileType className="mr-2 h-4 w-4" />
+                          Download Logo Kit
+                        </>
+                      )}
+                    </Button>
+                  </>
                 )}
               </div>
             </form>
           </Form>
 
-          <div className="bg-neutral-50 dark:bg-neutral-900 p-5 rounded-lg border border-neutral-200 dark:border-neutral-800">
+          <div className="bg-neutral-50 dark:bg-neutral-900 p-5 rounded-xl border border-neutral-200 dark:border-neutral-800">
             <div className="flex items-center gap-2 mb-4 text-neutral-800 dark:text-neutral-200">
               <LightbulbIcon className="h-5 w-5 text-amber-500" />
-              <h2 className="text-lg font-medium">Tips for great logos</h2>
+              <h2 className="text-lg font-bold">Tips for great logos</h2>
             </div>
             <ul className="space-y-3 text-neutral-600 dark:text-neutral-400">
               <li className="flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>
+                <span className="text-blue-600 mt-0.5">•</span>
                 <span>Be specific about colors, style, and theme</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>
+                <span className="text-blue-600 mt-0.5">•</span>
                 <span>Mention your industry or company type</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>
+                <span className="text-blue-600 mt-0.5">•</span>
                 <span>Describe any symbols or icons you want to include</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>
+                <span className="text-blue-600 mt-0.5">•</span>
                 <span>Specify the mood or feeling you want to convey</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>
+                <span className="text-blue-600 mt-0.5">•</span>
                 <span>Consider shapes (circular, square, etc.) for your design</span>
               </li>
             </ul>
           </div>
-        </div>
+        </BlurFade>
 
-        <div>
-          <Card className="overflow-hidden rounded-xl shadow-sm border-neutral-200 dark:border-neutral-800">
+        <BlurFade delay={0.3} inView>
+          <Card className="overflow-hidden rounded-xl shadow-lg border-neutral-200 dark:border-neutral-800 h-full">
             <CardContent className="p-0 aspect-square relative flex items-center justify-center bg-neutral-50 dark:bg-neutral-900">
               {isGenerating ? (
-                <div className="text-center">
+                <div className="w-full h-full">
                   <Skeleton className="w-full h-full absolute inset-0" />
-                  <div className="relative z-10 p-4">
-                    <div className="animate-pulse mb-4 font-medium">Creating your masterpiece...</div>
-                    <div className="text-sm text-neutral-500 dark:text-neutral-400">
-                      This may take up to 30 seconds
+                  <div className="relative z-10 p-4 h-full flex flex-col items-center justify-center">
+                    <Sparkles className="h-8 w-8 animate-pulse mb-4 text-blue-500" />
+                    <div className="text-center">
+                      <div className="animate-pulse mb-4 font-medium">Creating your masterpiece...</div>
+                      <div className="text-sm text-neutral-500 dark:text-neutral-400">
+                        This may take up to 30 seconds
+                      </div>
                     </div>
                   </div>
                 </div>
               ) : imageUrl ? (
-                <Image
-                  src={getImageUrl(imageUrl)}
-                  alt="Generated logo"
-                  fill
-                  className="object-contain p-4"
-                  priority
-                  unoptimized={imageUrl.includes('oaidalleapiprodscus.blob.core.windows.net')}
-                />
+                <div className="relative w-full h-full">
+                  <Image
+                    src={getImageUrl(imageUrl)}
+                    alt="Generated logo"
+                    fill
+                    className="object-contain p-4"
+                    priority
+                    unoptimized={imageUrl.includes('oaidalleapiprodscus.blob.core.windows.net')}
+                  />
+                  <div className="absolute bottom-4 right-4">
+                    <a
+                      href={getImageUrl(imageUrl)}
+                      download
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button size="sm" variant="outline" className="rounded-full bg-white/80 backdrop-blur-sm">
+                        <Download className="h-4 w-4 mr-1" />
+                        PNG
+                      </Button>
+                    </a>
+                  </div>
+                </div>
               ) : (
-                <div className="text-center p-8">
-                  <div className="flex justify-center mb-6">
-                    <div className="w-32 h-32 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-                      <Sparkles className="h-10 w-10 text-neutral-300 dark:text-neutral-600" />
-                    </div>
+                <div className="text-center p-4 w-full h-full flex flex-col items-center justify-center">
+                  <div className="w-20 h-20 bg-neutral-100 dark:bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Sparkles className="h-8 w-8 text-neutral-400 dark:text-neutral-600" />
                   </div>
-                  <div className="text-neutral-700 dark:text-neutral-300 font-medium mb-2">
-                    Your logo will appear here
-                  </div>
-                  <div className="text-sm text-neutral-500 dark:text-neutral-400">
-                    Create a detailed prompt and click Generate
-                  </div>
+                  <h3 className="text-xl font-bold mb-2">Your logo will appear here</h3>
+                  <p className="text-neutral-600 dark:text-neutral-400 max-w-xs mx-auto">
+                    Describe your logo and click Generate to create it
+                  </p>
                 </div>
               )}
             </CardContent>
           </Card>
-        </div>
+        </BlurFade>
       </div>
 
       <Dialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md rounded-xl">
           <DialogHeader>
-            <DialogTitle>Logo Saved Successfully!</DialogTitle>
-            <DialogDescription>
-              Your logo has been saved to your dashboard and is ready to use.
+            <DialogTitle className="text-xl font-bold tracking-tighter">LogoGPT Creation Saved!</DialogTitle>
+            <DialogDescription className="text-neutral-600 dark:text-neutral-400">
+              Your logo has been saved to your dashboard.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex justify-center p-6 bg-neutral-50 dark:bg-neutral-900 rounded-md my-2">
-            {imageUrl && (
-              <div className="relative w-48 h-48">
-                <Image
-                  src={getImageUrl(imageUrl)}
-                  alt="Generated logo"
-                  fill
-                  className="object-contain"
-                  unoptimized={imageUrl.includes('oaidalleapiprodscus.blob.core.windows.net')}
-                />
-              </div>
-            )}
-          </div>
-          <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-2">
-            <Button variant="outline" onClick={handleCreateNew}>
-              Create Another Logo
-            </Button>
-            <Button onClick={handleViewDashboard} className="gap-1">
+          <div className="flex flex-col sm:flex-row gap-4 pt-4">
+            <Button
+              onClick={handleViewDashboard}
+              className="flex-1 gap-1.5 rounded-lg"
+            >
               View Dashboard
               <ArrowRight className="h-4 w-4" />
             </Button>
-          </DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleCreateNew}
+              className="flex-1 rounded-lg"
+            >
+              Create Another Logo
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

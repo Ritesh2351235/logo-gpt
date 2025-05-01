@@ -35,7 +35,24 @@ const nextConfig: NextConfig = {
         hostname: `${awsBucketName}.s3.${awsRegion}.amazonaws.com`,
         pathname: '**',
       },
+      // Unsplash images for the logo examples
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        pathname: '**',
+      },
+      // Pinterest images for the logo examples
+      {
+        protocol: 'https',
+        hostname: 'i.pinimg.com',
+        pathname: '**',
+      },
     ],
+    // Allow data URLs for base64 images
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy:
+      "default-src 'self'; script-src 'none'; sandbox;",
   },
   // Add server environment variables that should be available at build time
   env: {

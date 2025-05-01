@@ -1,3 +1,5 @@
+"use client";
+
 import { ReactNode } from "react";
 import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
@@ -14,7 +16,9 @@ export default function DashboardLayout({
       <header className="sticky top-0 z-50 w-full border-b border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-sm">
         <div className="container flex h-16 max-w-screen-xl items-center px-4 sm:px-6">
           <Link href="/dashboard" className="mr-8 flex items-center gap-2">
-            <span className="text-xl font-bold tracking-tight">Logo Master</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xl font-bold tracking-tight">LogoGPT</span>
+            </div>
           </Link>
           <nav className="flex flex-1 items-center justify-between">
             <div className="flex items-center gap-6 text-sm font-medium">
@@ -53,9 +57,9 @@ export default function DashboardLayout({
       <footer className="py-6 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
         <div className="container max-w-screen-xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
-              © {new Date().getFullYear()} Logo Master. All rights reserved.
-            </p>
+            <div className="py-4 text-sm text-center text-neutral-500 dark:text-neutral-400">
+              © {new Date().getFullYear()} LogoGPT. All rights reserved.
+            </div>
             <div className="flex items-center gap-4">
               <Link
                 href="#"

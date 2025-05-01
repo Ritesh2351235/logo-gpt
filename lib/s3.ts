@@ -32,23 +32,43 @@ const createLocalUploadDirs = () => {
 };
 
 /**
- * Upload an image to S3 from a URL
- * @param imageUrl URL of the image to upload
+ * Upload an image to S3 from a URL or base64 data URL
+ * @param imageData URL or base64 data URL of the image
  * @param folder Optional folder path inside the bucket
  * @returns Promise with the S3 URL or local URL
  */
-export async function uploadImageToS3FromUrl(imageUrl: string, folder: string = 'logos'): Promise<string> {
+export async function uploadImageToS3FromUrl(imageData: string, folder: string = 'logos'): Promise<string> {
   try {
-    // Fetch image data
-    const response = await fetch(imageUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch image: ${response.statusText}`);
+    let imageBuffer: Buffer;
+    let contentType: string;
+
+    // Check if the imageData is a base64 data URL
+    if (imageData.startsWith('data:')) {
+      console.log('Processing base64 data URL');
+      // Extract the MIME type and base64 data
+      const matches = imageData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+
+      if (!matches || matches.length !== 3) {
+        throw new Error('Invalid base64 data URL format');
+      }
+
+      contentType = matches[1];
+      const base64Data = matches[2];
+      imageBuffer = Buffer.from(base64Data, 'base64');
+    } else {
+      console.log('Processing remote URL');
+      // Fetch image data from URL
+      const response = await fetch(imageData);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.statusText}`);
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      imageBuffer = Buffer.from(arrayBuffer);
+      contentType = response.headers.get('content-type') || 'image/png';
     }
 
-    const imageBuffer = await response.arrayBuffer();
-
     // Get file extension based on content type
-    const contentType = response.headers.get('content-type') || 'image/png';
     const fileExtension = contentType.split('/')[1] || 'png';
 
     // Generate a unique file name
@@ -62,7 +82,7 @@ export async function uploadImageToS3FromUrl(imageUrl: string, folder: string = 
         const command = new PutObjectCommand({
           Bucket: bucketName,
           Key: s3Key,
-          Body: Buffer.from(imageBuffer),
+          Body: imageBuffer,
           ContentType: contentType,
           // Remove ACL setting as it's not supported in buckets with Object Ownership enabled
         });
@@ -85,7 +105,7 @@ export async function uploadImageToS3FromUrl(imageUrl: string, folder: string = 
     const uploadDir = createLocalUploadDirs();
     const localFilePath = path.join(uploadDir, fileName);
 
-    fs.writeFileSync(localFilePath, Buffer.from(imageBuffer));
+    fs.writeFileSync(localFilePath, imageBuffer);
 
     // Return local URL path
     return `/uploads/logos/${fileName}`;
