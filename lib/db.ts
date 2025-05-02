@@ -1,5 +1,18 @@
 import { PrismaClient } from "@/lib/generated/prisma";
 
+// Debug log for database connection
+function logDatabaseConnection() {
+  console.log('Database connection attempt:');
+  // Log a safe version of the connection string (hide credentials)
+  const dbUrl = process.env.DATABASE_URL || 'not set';
+  const safeUrl = dbUrl.replace(/(postgresql:\/\/[^:]+:)[^@]+(@.+)/, '$1*****$2');
+  console.log('Database URL:', safeUrl);
+
+  // Check if running on Vercel
+  console.log('Running on Vercel:', !!process.env.VERCEL);
+  console.log('Node environment:', process.env.NODE_ENV);
+}
+
 // Initialize Prisma client globally
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
@@ -8,6 +21,20 @@ export const prisma =
   new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
   });
+
+// Log connection info
+logDatabaseConnection();
+
+// Test database connection on startup
+(async () => {
+  try {
+    // Simple query to test connection
+    await prisma.$queryRaw`SELECT 1 as result`;
+    console.log('Database connection successful');
+  } catch (e) {
+    console.error('Database connection failed:', e);
+  }
+})();
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
