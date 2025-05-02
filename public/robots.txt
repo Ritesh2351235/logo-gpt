@@ -1,0 +1,14 @@
+# Allow all web crawlers
+User-agent: *
+Allow: /
+
+# Disallow authentication and private pages
+Disallow: /sign-in
+Disallow: /sign-up
+Disallow: /dashboard
+Disallow: /generate
+Disallow: /payment
+Disallow: /api/
+
+# Specify sitemap location
+Sitemap: https://www.logogpt.fun/sitemap.xml 

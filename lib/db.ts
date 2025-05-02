@@ -23,6 +23,7 @@ export const userService = {
         data: {
           clerkId,
           email,
+          credits: 1, // Default 1 credit on signup
         },
       });
     }
@@ -33,6 +34,44 @@ export const userService = {
   async getUserByClerkId(clerkId: string) {
     return prisma.user.findUnique({
       where: { clerkId },
+    });
+  },
+
+  async updateUserCredits(userId: string, creditsToAdd: number) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        credits: user.credits + creditsToAdd,
+      },
+    });
+  },
+
+  async decrementUserCredits(userId: string, amount: number = 1) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    if (user.credits < amount) {
+      throw new Error("Insufficient credits");
+    }
+
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        credits: user.credits - amount,
+      },
     });
   },
 };

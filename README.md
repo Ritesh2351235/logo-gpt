@@ -51,9 +51,9 @@ A full-stack SaaS application for AI-powered logo generation using Next.js, Cler
    ```
 
 5. Run the development server:
-   ```bash
-   npm run dev
-   ```
+```bash
+npm run dev
+```
 
 6. Open [http://localhost:3000](http://localhost:3000) in your browser.
 

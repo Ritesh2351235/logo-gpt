@@ -31,8 +31,7 @@ export default function SignUpPage() {
                 formFieldAction: "text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium",
               },
             }}
-            routing="path"
-            path="/sign-up"
+            routing="hash"
             signInUrl="/sign-in"
             redirectUrl="/dashboard"
           />

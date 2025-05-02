@@ -15,12 +15,14 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  clerkId   String   @unique
+  id        String    @id @default(cuid())
+  email     String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  clerkId   String    @unique
+  credits   Int       @default(1)
   logos     Logo[]
+  payments  Payment[]
 }
 
 model Logo {
@@ -29,6 +31,19 @@ model Logo {
   imageUrl  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  amount    Int
+  credits   Int
+  paymentId String   @unique
+  orderId   String   @unique
+  status    String
+  planId    String
+  createdAt DateTime @default(now())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

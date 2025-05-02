@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { prisma, userService, logoService } from "@/lib/db";
 import { uploadImageToS3FromUrl } from "@/lib/s3";
 
 export async function POST(req: Request) {
   try {
-    const { userId } = await auth();
+    const user = await currentUser();
 
-    if (!userId) {
+    if (!user || !user.id) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
@@ -19,17 +18,17 @@ export async function POST(req: Request) {
       return new NextResponse("Prompt and imageUrl are required", { status: 400 });
     }
 
-    // Find or create user
-    const user = await currentUser();
-    const email = user?.emailAddresses[0]?.emailAddress;
+    // Get user email from Clerk
+    const email = user.emailAddresses[0]?.emailAddress;
 
     if (!email) {
       return new NextResponse("User email not found", { status: 400 });
     }
 
-    const dbUser = await userService.findOrCreateUser(userId, email);
+    // Find or create user with Clerk ID
+    const dbUser = await userService.findOrCreateUser(user.id, email);
 
-    // Upload to S3 or local storage (our function now handles both URLs and base64 data)
+    // Upload to S3 or local storage
     console.log("Saving logo to storage...");
     const storedImageUrl = await uploadImageToS3FromUrl(imageUrl);
 
@@ -46,17 +45,20 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   try {
-    const { userId } = await auth();
+    const user = await currentUser();
 
-    if (!userId) {
+    if (!user || !user.id) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const dbUser = await userService.getUserByClerkId(userId);
+    // Find or create user with Clerk ID
+    const email = user.emailAddresses[0]?.emailAddress;
 
-    if (!dbUser) {
-      return new NextResponse("User not found", { status: 404 });
+    if (!email) {
+      return new NextResponse("User email not found", { status: 400 });
     }
+
+    const dbUser = await userService.findOrCreateUser(user.id, email);
 
     const logos = await logoService.getLogosByUserId(dbUser.id);
 

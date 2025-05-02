@@ -1,0 +1,28 @@
+{
+  "name": "LogoGPT - AI Logo Generator",
+  "short_name": "LogoGPT",
+  "description": "Create stunning, professional logos in seconds with AI",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "/logo.png",
+      "type": "image/png",
+      "sizes": "196x196",
+      "purpose": "maskable"
+    }
+  ]
+}

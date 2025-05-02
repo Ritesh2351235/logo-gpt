@@ -1,63 +1,83 @@
 "use client";
 
-import { ReactNode } from "react";
-import { UserButton } from "@clerk/nextjs";
+import { ReactNode, useEffect, useState } from "react";
+import { Navbar } from "@/components/Navbar";
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
-import { MoveRight, Home, Sparkles } from "lucide-react";
+
+interface UserData {
+  id: string;
+  credits: number;
+}
 
 export default function DashboardLayout({
   children,
 }: {
   children: ReactNode;
 }) {
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchUserData = async () => {
+    try {
+      const response = await fetch('/api/user', {
+        // Add cache control to prevent caching
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUserData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Initial fetch
+    fetchUserData();
+
+    // Set up interval to refresh data every 15 seconds
+    const intervalId = setInterval(fetchUserData, 15000);
+
+    // Set up visibility change handler to refresh when tab becomes active
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchUserData();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Listen for the custom refreshUserData event from child components
+    const handleRefreshUserData = () => {
+      console.log('Refreshing user data from event');
+      fetchUserData();
+    };
+    document.addEventListener('refreshUserData', handleRefreshUserData);
+
+    // Clean up
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('refreshUserData', handleRefreshUserData);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-white dark:bg-neutral-950">
-      <header className="sticky top-0 z-50 w-full border-b border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-sm">
-        <div className="container flex h-16 max-w-screen-xl items-center px-4 sm:px-6">
-          <Link href="/dashboard" className="mr-8 flex items-center gap-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xl font-bold tracking-tight">LogoGPT</span>
-            </div>
-          </Link>
-          <nav className="flex flex-1 items-center justify-between">
-            <div className="flex items-center gap-6 text-sm font-medium">
-              <Link
-                href="/dashboard"
-                className="flex items-center gap-1.5 text-neutral-600 transition-colors hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-50"
-              >
-                <Home size={16} />
-                Dashboard
-              </Link>
-              <Link
-                href="/generate"
-                className="flex items-center gap-1.5 text-neutral-600 transition-colors hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-50"
-              >
-                <Sparkles size={16} />
-                Generate
-              </Link>
-            </div>
-            <div className="flex items-center">
-              <UserButton
-                appearance={{
-                  elements: {
-                    userButtonAvatarBox: "w-10 h-10",
-                    userButtonBox: "hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full p-1 transition-colors",
-                  },
-                }}
-                afterSignOutUrl="/"
-              />
-            </div>
-          </nav>
-        </div>
-      </header>
-      <main className="container max-w-screen-xl mx-auto px-4 sm:px-6 py-8 min-h-[calc(100vh-64px-72px)]">
+      <Navbar variant="dashboard" />
+      <main className="container max-w-screen-xl mx-auto px-3 sm:px-6 py-4 sm:py-8 min-h-[calc(100vh-64px-72px)]">
         {children}
       </main>
-      <footer className="py-6 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
-        <div className="container max-w-screen-xl mx-auto px-4 sm:px-6">
+      <footer className="py-4 sm:py-6 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
+        <div className="container max-w-screen-xl mx-auto px-3 sm:px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="py-4 text-sm text-center text-neutral-500 dark:text-neutral-400">
+            <div className="py-2 sm:py-4 text-sm text-center text-neutral-500 dark:text-neutral-400">
               © {new Date().getFullYear()} LogoGPT. All rights reserved.
             </div>
             <div className="flex items-center gap-4">
