@@ -3,8 +3,8 @@ import { currentUser } from "@clerk/nextjs/server";
 import { generateLogo } from "@/lib/openai";
 import { prisma, userService } from "@/lib/db";
 
-// Set a longer timeout (120 seconds) for image generation
-export const maxDuration = 120; // seconds
+// Set timeout to 60 seconds (maximum allowed on Vercel hobby plan)
+export const maxDuration = 60; // seconds
 
 export async function POST(req: Request) {
   try {
