@@ -290,6 +290,7 @@ export default function LandingPage() {
                 <ul className="space-y-2">
                   <li><Link href="#features-heading" className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">Features</Link></li>
                   <li><Link href="#pricing-heading" className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">Pricing</Link></li>
+                  <li><Link href="/contact" className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">Contact</Link></li>
                 </ul>
               </div>
             </div>

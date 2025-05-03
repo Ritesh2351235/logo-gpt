@@ -6,7 +6,7 @@ import { useAuth } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Home, Sparkles, CreditCard, Loader2 } from "lucide-react";
+import { Home, Sparkles, CreditCard, Loader2, Phone } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface UserData {
@@ -59,6 +59,9 @@ export function Navbar({ className, variant = "landing" }: NavbarProps) {
             <span className="text-xl font-bold tracking-tight">LogoGPT</span>
           </Link>
           <div className="flex items-center gap-3 sm:gap-4">
+            <Link href="/contact">
+              <Button variant="ghost" className="rounded-full">Contact</Button>
+            </Link>
             <Link href="/sign-in">
               <Button variant="ghost" className="rounded-full">Sign in</Button>
             </Link>
@@ -99,6 +102,13 @@ export function Navbar({ className, variant = "landing" }: NavbarProps) {
             >
               <CreditCard size={16} />
               <span className="hidden sm:inline">Buy Credits</span>
+            </Link>
+            <Link
+              href="/contact"
+              className="flex items-center gap-1.5 text-neutral-600 transition-colors hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-50"
+            >
+              <Phone size={16} />
+              <span className="hidden sm:inline">Contact</span>
             </Link>
           </div>
           <div className="flex items-center gap-3 sm:gap-4 ml-auto sm:ml-0 order-0 sm:order-none">
