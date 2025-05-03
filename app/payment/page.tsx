@@ -235,7 +235,6 @@ const PaymentPage = () => {
           {/* Currency Toggle Button */}
           <div className="mt-4">
             <Button
-              variant="outline"
               size="sm"
               className="mt-2 text-sm"
               onClick={toggleCurrency}
@@ -243,7 +242,7 @@ const PaymentPage = () => {
               {currency === 'USD' ? '🇺🇸 USD' : '🇮🇳 INR'} • Click to switch to {currency === 'USD' ? 'INR' : 'USD'}
             </Button>
             {currency === 'INR' && (
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
                 Indian users can pay using UPI, NetBanking, Wallet and Cards
               </p>
             )}
