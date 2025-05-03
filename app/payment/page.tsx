@@ -21,7 +21,6 @@ const PLANS = [
     id: 'starter',
     name: 'Starter Plan',
     price: 5,
-    amount: 500, // Amount in smallest currency unit (cents/paise)
     credits: 30,
     features: [
       'Generate 30 high-quality logos',
@@ -35,7 +34,6 @@ const PLANS = [
     id: 'pro',
     name: 'Pro Plan',
     price: 10,
-    amount: 1000, // Amount in smallest currency unit (cents/paise)
     credits: 80,
     features: [
       'Generate 80 high-quality logos',
@@ -48,12 +46,64 @@ const PLANS = [
   },
 ];
 
+// Define currency conversion for INR
+const USD_TO_INR_CONVERSION = 83; // Approximate conversion rate
+
+// Define Razorpay options type
+interface RazorpayOptions {
+  key: string | undefined;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  handler: (response: any) => Promise<void>;
+  prefill: {
+    name: string;
+    email: string;
+    contact: string;
+  };
+  theme: {
+    color: string;
+  };
+  modal: {
+    ondismiss: () => void;
+  };
+  method?: {
+    upi?: boolean;
+    netbanking?: boolean;
+    card?: boolean;
+    wallet?: boolean;
+  };
+}
+
 const PaymentPage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<typeof PLANS[0] | null>(null);
+  const [isIndianUser, setIsIndianUser] = useState(false);
+  const [currency, setCurrency] = useState('USD');
   const router = useRouter();
   const { user } = useUser();
+
+  // Check if user is from India by timezone or browser language
+  useEffect(() => {
+    const checkIfIndianUser = () => {
+      // Check browser timezone
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const browserLanguage = navigator.language;
+
+      if (timezone?.includes('Asia/Kolkata') ||
+        timezone?.includes('India') ||
+        browserLanguage?.includes('en-IN') ||
+        browserLanguage?.includes('hi')) {
+        setIsIndianUser(true);
+        setCurrency('INR');
+      }
+    };
+
+    checkIfIndianUser();
+  }, []);
 
   const handleScriptLoad = () => {
     setScriptLoaded(true);
@@ -61,6 +111,11 @@ const PaymentPage = () => {
 
   const handleSelectPlan = (plan: typeof PLANS[0]) => {
     setSelectedPlan(plan);
+  };
+
+  // Toggle between USD and INR
+  const toggleCurrency = () => {
+    setCurrency(prev => prev === 'USD' ? 'INR' : 'USD');
   };
 
   const handlePayment = async () => {
@@ -78,23 +133,30 @@ const PaymentPage = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          amount: selectedPlan.amount,
-          currency: 'INR',
+          currency: currency,
           plan: selectedPlan.id,
         }),
       });
+
       const data = await response.json();
 
-      const options = {
+      if (!data.orderId) {
+        throw new Error('Failed to create order');
+      }
+
+      // Calculate amount based on currency
+      const amount = currency === 'INR'
+        ? Math.round(selectedPlan.price * USD_TO_INR_CONVERSION)
+        : selectedPlan.price;
+
+      const options: RazorpayOptions = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: selectedPlan.amount * 100,
-        currency: 'INR',
+        amount: amount * 100, // Convert to smallest currency unit
+        currency: currency,
         name: 'LogoGPT',
         description: `Payment for LogoGPT ${selectedPlan.name}`,
         order_id: data.orderId,
         handler: async function (response: any) {
-          console.log(response);
-
           // Verify payment and add credits
           try {
             const verifyResponse = await fetch('/api/verify-payment', {
@@ -136,6 +198,16 @@ const PaymentPage = () => {
         }
       };
 
+      // Add UPI options for India
+      if (currency === 'INR') {
+        options.method = {
+          upi: true,
+          netbanking: true,
+          card: true,
+          wallet: true,
+        };
+      }
+
       const rzp1 = new window.Razorpay(options);
       rzp1.open();
     } catch (error) {
@@ -159,6 +231,23 @@ const PaymentPage = () => {
           <p className="text-xl text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto">
             Select a plan that works for your logo generation needs
           </p>
+
+          {/* Currency Toggle Button */}
+          <div className="mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-2 text-sm"
+              onClick={toggleCurrency}
+            >
+              {currency === 'USD' ? '🇺🇸 USD' : '🇮🇳 INR'} • Click to switch to {currency === 'USD' ? 'INR' : 'USD'}
+            </Button>
+            {currency === 'INR' && (
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                Indian users can pay using UPI, NetBanking, Wallet and Cards
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
@@ -181,7 +270,13 @@ const PaymentPage = () => {
                 </div>
                 <CardDescription>
                   <div className="mt-2">
-                    <span className="text-4xl font-bold">${plan.price}</span>
+                    <span className="text-4xl font-bold">
+                      {currency === 'USD' ? '$' : '₹'}
+                      {currency === 'USD'
+                        ? plan.price
+                        : Math.round(plan.price * USD_TO_INR_CONVERSION)
+                      }
+                    </span>
                     <span className="text-neutral-500 dark:text-neutral-400 text-base"> / one-time</span>
                   </div>
                   <p className="text-neutral-500 dark:text-neutral-400 mt-2">
@@ -220,7 +315,17 @@ const PaymentPage = () => {
             size="lg"
             className="px-8 py-6 text-lg"
           >
-            {isProcessing ? 'Processing...' : !scriptLoaded ? 'Loading Payment...' : !selectedPlan ? 'Select a plan above' : `Pay $${selectedPlan.price} Now`}
+            {isProcessing
+              ? 'Processing...'
+              : !scriptLoaded
+                ? 'Loading Payment...'
+                : !selectedPlan
+                  ? 'Select a plan above'
+                  : `Pay ${currency === 'USD'
+                    ? `$${selectedPlan.price}`
+                    : `₹${Math.round(selectedPlan.price * USD_TO_INR_CONVERSION)}`
+                  } Now`
+            }
           </Button>
           <p className="mt-4 text-sm text-neutral-500 dark:text-neutral-400">
             Secured by Razorpay • 100% secure payment

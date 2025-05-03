@@ -7,11 +7,14 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// Define plans
+// Define plans with fixed pricing
 const PLANS = {
-  starter: { amount: 500, credits: 30 },
-  pro: { amount: 1000, credits: 80 },
+  starter: { amount: 5, credits: 30 },
+  pro: { amount: 10, credits: 80 },
 };
+
+// Define currency conversion for INR
+const USD_TO_INR_CONVERSION = 83; // Approximate conversion rate
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,14 +27,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { amount, currency, plan } = await request.json();
+    const { currency, plan } = await request.json();
 
     // Validate plan
-    if (plan && !PLANS[plan as keyof typeof PLANS]) {
+    if (!plan || !PLANS[plan as keyof typeof PLANS]) {
       return NextResponse.json(
         { error: "Invalid plan selected" },
         { status: 400 }
       );
+    }
+
+    // Get the amount from the selected plan
+    const selectedPlan = PLANS[plan as keyof typeof PLANS];
+    let amount = selectedPlan.amount;
+
+    // Convert to INR if needed
+    if (currency === 'INR') {
+      amount = Math.round(amount * USD_TO_INR_CONVERSION);
     }
 
     // Create receipt ID
@@ -39,14 +51,21 @@ export async function POST(request: NextRequest) {
 
     const order = await razorpay.orders.create({
       amount: amount * 100, // Convert to smallest currency unit
-      currency: currency || "INR",
+      currency: currency || "USD",
       receipt: receiptId,
       notes: {
         planId: plan,
+        credits: selectedPlan.credits,
+        userId: clerkId,
       },
     });
 
-    return NextResponse.json({ orderId: order.id }, { status: 200 });
+    return NextResponse.json({
+      orderId: order.id,
+      plan: plan,
+      amount: amount,
+      credits: selectedPlan.credits
+    }, { status: 200 });
   } catch (error) {
     console.error("Error creating order:", error);
     return NextResponse.json(
