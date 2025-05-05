@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { useUser } from '@clerk/nextjs';
 
 declare global {
@@ -82,7 +81,8 @@ const PaymentPage = () => {
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<typeof PLANS[0] | null>(null);
   const [isIndianUser, setIsIndianUser] = useState(false);
-  const [currency, setCurrency] = useState('USD');
+  // This is only for display purposes now
+  const [displayCurrency, setDisplayCurrency] = useState('USD');
   const router = useRouter();
   const { user } = useUser();
 
@@ -98,7 +98,7 @@ const PaymentPage = () => {
         browserLanguage?.includes('en-IN') ||
         browserLanguage?.includes('hi')) {
         setIsIndianUser(true);
-        setCurrency('INR');
+        setDisplayCurrency('INR');
       }
     };
 
@@ -113,9 +113,9 @@ const PaymentPage = () => {
     setSelectedPlan(plan);
   };
 
-  // Toggle between USD and INR
+  // Toggle between USD and INR for display only
   const toggleCurrency = () => {
-    setCurrency(prev => prev === 'USD' ? 'INR' : 'USD');
+    setDisplayCurrency(prev => prev === 'USD' ? 'INR' : 'USD');
   };
 
   const handlePayment = async () => {
@@ -133,7 +133,7 @@ const PaymentPage = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          currency: currency,
+          displayCurrency: displayCurrency,
           plan: selectedPlan.id,
         }),
       });
@@ -144,15 +144,13 @@ const PaymentPage = () => {
         throw new Error('Failed to create order');
       }
 
-      // Calculate amount based on currency
-      const amount = currency === 'INR'
-        ? Math.round(selectedPlan.price * USD_TO_INR_CONVERSION)
-        : selectedPlan.price;
+      // Always use INR for the actual Razorpay payment
+      const amountInINR = data.amount * 100; // Amount is already converted to INR in the API
 
       const options: RazorpayOptions = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: amount * 100, // Convert to smallest currency unit
-        currency: currency,
+        amount: amountInINR, // Amount in smallest currency unit
+        currency: "INR", // Always INR for Razorpay
         name: 'LogoGPT',
         description: `Payment for LogoGPT ${selectedPlan.name}`,
         order_id: data.orderId,
@@ -195,24 +193,30 @@ const PaymentPage = () => {
           ondismiss: function () {
             setIsProcessing(false);
           }
-        }
-      };
-
-      // Add UPI options for India
-      if (currency === 'INR') {
-        options.method = {
+        },
+        // Add UPI and other payment options for Indian payment methods
+        method: {
           upi: true,
           netbanking: true,
           card: true,
           wallet: true,
-        };
-      }
+        }
+      };
 
       const rzp1 = new window.Razorpay(options);
       rzp1.open();
     } catch (error) {
       console.error('Error processing payment:', error);
       setIsProcessing(false);
+    }
+  };
+
+  // Calculate display price based on selected currency
+  const getDisplayPrice = (basePrice: number) => {
+    if (displayCurrency === 'USD') {
+      return `$${basePrice}`;
+    } else {
+      return `₹${Math.round(basePrice * USD_TO_INR_CONVERSION)}`;
     }
   };
 
@@ -232,20 +236,21 @@ const PaymentPage = () => {
             Select a plan that works for your logo generation needs
           </p>
 
-          {/* Currency Toggle Button */}
+          {/* Currency Toggle Button (for display only) */}
           <div className="mt-4">
             <Button
               size="sm"
               className="mt-2 text-sm"
               onClick={toggleCurrency}
             >
-              {currency === 'USD' ? '🇺🇸 USD' : '🇮🇳 INR'} • Click to switch to {currency === 'USD' ? 'INR' : 'USD'}
+              {displayCurrency === 'USD' ? '🇺🇸 USD' : '🇮🇳 INR'} • Click to switch to {displayCurrency === 'USD' ? 'INR' : 'USD'}
             </Button>
-            {currency === 'INR' && (
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-                Indian users can pay using UPI, NetBanking, Wallet and Cards
-              </p>
-            )}
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+              All payments are processed in Indian Rupees (INR)
+            </p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              Indian users can pay using UPI, NetBanking, Wallet and Cards
+            </p>
           </div>
         </div>
 
@@ -270,11 +275,7 @@ const PaymentPage = () => {
                 <CardDescription>
                   <div className="mt-2">
                     <span className="text-4xl font-bold">
-                      {currency === 'USD' ? '$' : '₹'}
-                      {currency === 'USD'
-                        ? plan.price
-                        : Math.round(plan.price * USD_TO_INR_CONVERSION)
-                      }
+                      {getDisplayPrice(plan.price)}
                     </span>
                     <span className="text-neutral-500 dark:text-neutral-400 text-base"> / one-time</span>
                   </div>
@@ -320,10 +321,7 @@ const PaymentPage = () => {
                 ? 'Loading Payment...'
                 : !selectedPlan
                   ? 'Select a plan above'
-                  : `Pay ${currency === 'USD'
-                    ? `$${selectedPlan.price}`
-                    : `₹${Math.round(selectedPlan.price * USD_TO_INR_CONVERSION)}`
-                  } Now`
+                  : `Pay ${getDisplayPrice(selectedPlan.price)} Now`
             }
           </Button>
           <p className="mt-4 text-sm text-neutral-500 dark:text-neutral-400">
