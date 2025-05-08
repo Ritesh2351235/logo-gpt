@@ -7,7 +7,9 @@ import { BlurFadeText } from "@/components/magicui/blur-fade-text";
 import { motion } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import Script from "next/script";
+import { ShimmerButton } from "@/components/magicui/shimmer-button";
 import { Navbar } from "@/components/Navbar";
+import router from "next/router";
 
 // Logo example images
 const logoImages = [
@@ -84,17 +86,25 @@ export default function LandingPage() {
                 className="text-center space-y-8"
               >
                 <h1 id="hero-heading" className="text-5xl md:text-7xl font-bold tracking-tight">
-                  <BlurFadeText>Professional Logos</BlurFadeText>
+                  <BlurFadeText>
+                    Professional <span className="font-['Playfair_Display'] pl-3 italic">logos</span>
+                  </BlurFadeText>
                   <span className="block mt-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                     In Minutes, Not Months
                   </span>
                 </h1>
 
-                <p className="text-xl md:text-2xl text-neutral-600 dark:text-neutral-300 max-w-3xl mx-auto">
+                <p className="text-xl md:text-2xl text-neutral-600 dark:text-neutral-300 max-w-3xl mx-auto  font-normal">
                   <span className="font-bold">Stop spending thousands</span> on logo designs. Create
                   <span className="font-bold"> stunning, professional-looking logos</span> in minutes with AI.
                 </p>
               </motion.div>
+            </div>
+          </section>
+
+          <section className="py-4 px-4 bg-white dark:bg-neutral-900">
+            <div className="container mx-auto max-w-5xl flex justify-center ">
+              <ShimmerButton className="font-['Playfair_Display'] font-semibold" onClick={() => window.location.href = "/sign-up"} >Get Started</ShimmerButton>
             </div>
           </section>
 

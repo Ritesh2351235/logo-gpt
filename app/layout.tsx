@@ -1,6 +1,7 @@
 import { type Metadata } from 'next'
 import { ClerkProvider } from '@clerk/nextjs'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { Playfair_Display } from 'next/font/google'
 import './globals.css'
 import ServiceWorkerRegistration from './service-worker-registration'
 
@@ -12,6 +13,14 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
+})
+
+const playfairDisplay = Playfair_Display({
+  subsets: ['latin'],
+  weight: '400',
+  style: 'italic',
+  display: 'swap',
+  variable: '--font-playfair',
 })
 
 export const metadata: Metadata = {
@@ -56,14 +65,14 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en">
+      <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable}`}>
         <head>
           <link rel="manifest" href="/manifest.json" />
           <meta name="theme-color" content="#ffffff" />
           <link rel="icon" href="/logo.png" />
           <link rel="apple-touch-icon" href="/logo.png" />
         </head>
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <body className="antialiased">
           <ServiceWorkerRegistration />
           {children}
         </body>
