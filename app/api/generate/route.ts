@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
-import { generateLogo } from "@/lib/openai";
+import { generateLogo, editImage } from "@/lib/openai";
 import { prisma, userService } from "@/lib/db";
 
 // Set timeout to 60 seconds (maximum allowed on Vercel hobby plan)
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     const clerkId = user.id;
 
     const body = await req.json();
-    const { prompt } = body;
+    const { prompt, imageBase64 } = body;
 
     if (!prompt) {
       return NextResponse.json(
@@ -57,17 +57,36 @@ export async function POST(req: Request) {
       );
     }
 
-    console.log("Starting logo generation with prompt:", prompt);
+    // Determine whether to generate a new logo or edit an existing image
+    const isImageEdit = !!imageBase64;
+    console.log(`Starting ${isImageEdit ? 'image edit' : 'logo generation'} with prompt:`, prompt);
 
-    // Run logo generation with try-catch to handle timeouts and network errors
+    if (isImageEdit) {
+      console.log(`Image data received: ${imageBase64.substring(0, 50)}... (truncated)`);
+      console.log(`Image data length: ${imageBase64.length} characters`);
+    }
+
+    // Run logo generation or image editing with try-catch to handle timeouts and network errors
     let imageUrl;
     try {
-      imageUrl = await generateLogo(prompt);
-      console.log("Logo generation successful");
+      if (isImageEdit) {
+        // Edit the existing image
+        imageUrl = await editImage(imageBase64, prompt);
+        console.log("Image edit successful");
+        console.log("Image URL returned:", imageUrl ? `${imageUrl.substring(0, 50)}... (truncated, length: ${imageUrl.length})` : "No URL returned");
+      } else {
+        // Generate a new logo
+        imageUrl = await generateLogo(prompt);
+        console.log("Logo generation successful");
+      }
+
+      if (!imageUrl) {
+        throw new Error(`No image URL returned from ${isImageEdit ? 'edit' : 'generation'}`);
+      }
     } catch (error: any) {
-      console.error("Logo generation error:", error.message);
+      console.error(`${isImageEdit ? 'Image edit' : 'Logo generation'} error:`, error.message);
       return NextResponse.json(
-        { error: `Failed to generate logo: ${error.message}` },
+        { error: `Failed to ${isImageEdit ? 'edit image' : 'generate logo'}: ${error.message}` },
         { status: 500 }
       );
     }
@@ -90,7 +109,7 @@ export async function POST(req: Request) {
 
     // Return a more informative error response
     return NextResponse.json(
-      { error: error.message || "Failed to generate logo" },
+      { error: error.message || "Failed to generate or edit logo" },
       { status: error.status || 500 }
     );
   }

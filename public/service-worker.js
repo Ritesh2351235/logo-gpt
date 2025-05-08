@@ -16,6 +16,21 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
+  // Skip POST requests - don't try to cache them
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
+  // Skip requests to extension schemes
+  if (!event.request.url.startsWith('http')) {
+    return;
+  }
+
+  // Skip API requests entirely
+  if (event.request.url.includes('/api/')) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then(response => {
@@ -34,17 +49,21 @@ self.addEventListener('fetch', event => {
             // Clone the response
             const responseToCache = response.clone();
 
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                // Don't cache API requests
-                if (!event.request.url.includes('/api/')) {
+            // Only cache GET requests
+            if (event.request.method === 'GET') {
+              caches.open(CACHE_NAME)
+                .then(cache => {
                   cache.put(event.request, responseToCache);
-                }
-              });
+                });
+            }
 
             return response;
           }
-        );
+        ).catch(error => {
+          console.error('Fetch failed:', error);
+          // Just continue without caching if fetch fails
+          return new Response('Network error', { status: 503, statusText: 'Service Unavailable' });
+        });
       })
   );
 }); 

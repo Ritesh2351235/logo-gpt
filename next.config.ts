@@ -6,6 +6,13 @@ const awsRegion = process.env.AWS_REGION || 'us-east-1';
 
 const nextConfig: NextConfig = {
   /* config options here */
+  // Increase API body size limit for image uploads
+  api: {
+    bodyParser: {
+      sizeLimit: '8mb',
+    },
+    responseLimit: '8mb',
+  },
   images: {
     remotePatterns: [
       // OpenAI Domains
