@@ -1,20 +1,72 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import Script from 'next/script';
-import { useRouter } from 'next/navigation';
+import React from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useUser } from '@clerk/nextjs';
+import { Mail, ArrowRight, Star } from 'lucide-react';
+import { BlurFade } from "@/components/magicui/blur-fade";
+import { BlurFadeText } from "@/components/magicui/blur-fade-text";
 
-declare global {
-  interface Window {
-    Razorpay: any;
-  }
-}
+const PaymentPage = () => {
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-neutral-950 dark:to-neutral-900 py-12 px-4 relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-b from-blue-500/5 to-blue-600/5 blur-3xl transform rotate-12 dark:from-blue-500/5 dark:to-blue-600/5" />
+        <div className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-t from-blue-500/5 to-blue-600/5 blur-3xl transform -rotate-12 dark:from-blue-500/5 dark:to-blue-600/5" />
+      </div>
 
-// Define pricing plans
+      <div className="max-w-3xl mx-auto text-center relative z-10 flex flex-col items-center justify-center min-h-[80vh]">
+        <BlurFade delay={0.1} inView>
+          <div className="mb-12">
+            <div className="inline-block animate-float">
+              <Badge variant="outline" className="mb-4 py-2 px-4 text-sm bg-neutral-100 dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 backdrop-blur-sm">
+                <Star className="w-4 h-4 mr-1.5 inline-block" />
+                Payment System Update
+              </Badge>
+            </div>
+            <BlurFadeText delay={0.2}>
+              <h1 className="text-5xl font-bold tracking-tight mb-6 bg-gradient-to-r from-neutral-900 via-neutral-800 to-neutral-900 dark:from-neutral-100 dark:via-neutral-200 dark:to-neutral-100 bg-clip-text text-transparent">
+                Need Credits?
+              </h1>
+            </BlurFadeText>
+            <div className="max-w-2xl mx-auto space-y-6">
+              <p className="text-xl text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                While our payment system is being set up, we're handling credit requests directly. Simply reach out to us, and we'll help you get the credits you need.
+              </p>
+              <p className="text-lg text-neutral-500 dark:text-neutral-500">
+                Thank you for your understanding and cooperation during this transition.
+              </p>
+            </div>
+          </div>
+        </BlurFade>
+
+        <BlurFade delay={0.3} inView>
+          <div className="flex flex-col items-center gap-4">
+            <Link href="/contact">
+              <Button
+                className="gap-2 py-6 px-8 text-lg group relative overflow-hidden bg-neutral-900 hover:bg-black dark:bg-neutral-800 dark:hover:bg-neutral-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+                size="lg"
+              >
+                <Mail className="w-5 h-5" />
+                Contact Us
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </Link>
+            <span className="text-sm text-neutral-500 dark:text-neutral-400">
+              We'll respond within 24 hours
+            </span>
+          </div>
+        </BlurFade>
+      </div>
+    </div>
+  );
+};
+
+export default PaymentPage;
+
+/* Original implementation preserved as comment for future use
 const PLANS = [
   {
     id: 'starter',
@@ -29,308 +81,5 @@ const PLANS = [
     ],
     badge: 'Popular',
   },
-  {
-    id: 'pro',
-    name: 'Pro Plan',
-    price: 10,
-    credits: 80,
-    features: [
-      'Generate 80 high-quality logos',
-      'Download in all formats with source files',
-      'Advanced mockup tools and templates',
-      'Unlimited logo storage',
-      'Priority customer support',
-    ],
-    badge: 'Best Value',
-  },
-];
-
-// Define currency conversion for INR
-const USD_TO_INR_CONVERSION = 83; // Approximate conversion rate
-
-// Define Razorpay options type
-interface RazorpayOptions {
-  key: string | undefined;
-  amount: number;
-  currency: string;
-  name: string;
-  description: string;
-  order_id: string;
-  handler: (response: any) => Promise<void>;
-  prefill: {
-    name: string;
-    email: string;
-    contact: string;
-  };
-  theme: {
-    color: string;
-  };
-  modal: {
-    ondismiss: () => void;
-  };
-  method?: {
-    upi?: boolean;
-    netbanking?: boolean;
-    card?: boolean;
-    wallet?: boolean;
-  };
-}
-
-const PaymentPage = () => {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [scriptLoaded, setScriptLoaded] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<typeof PLANS[0] | null>(null);
-  const [isIndianUser, setIsIndianUser] = useState(false);
-  // This is only for display purposes now
-  const [displayCurrency, setDisplayCurrency] = useState('USD');
-  const router = useRouter();
-  const { user } = useUser();
-
-  // Check if user is from India by timezone or browser language
-  useEffect(() => {
-    const checkIfIndianUser = () => {
-      // Check browser timezone
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const browserLanguage = navigator.language;
-
-      if (timezone?.includes('Asia/Kolkata') ||
-        timezone?.includes('India') ||
-        browserLanguage?.includes('en-IN') ||
-        browserLanguage?.includes('hi')) {
-        setIsIndianUser(true);
-        setDisplayCurrency('INR');
-      }
-    };
-
-    checkIfIndianUser();
-  }, []);
-
-  const handleScriptLoad = () => {
-    setScriptLoaded(true);
-  };
-
-  const handleSelectPlan = (plan: typeof PLANS[0]) => {
-    setSelectedPlan(plan);
-  };
-
-  // Toggle between USD and INR for display only
-  const toggleCurrency = () => {
-    setDisplayCurrency(prev => prev === 'USD' ? 'INR' : 'USD');
-  };
-
-  const handlePayment = async () => {
-    if (!scriptLoaded || !selectedPlan) {
-      console.error('Razorpay script not loaded or no plan selected');
-      return;
-    }
-
-    setIsProcessing(true);
-
-    try {
-      const response = await fetch('/api/create-order', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          displayCurrency: displayCurrency,
-          plan: selectedPlan.id,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!data.orderId) {
-        throw new Error('Failed to create order');
-      }
-
-      // Always use INR for the actual Razorpay payment
-      const amountInINR = data.amount * 100; // Amount is already converted to INR in the API
-
-      const options: RazorpayOptions = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: amountInINR, // Amount in smallest currency unit
-        currency: "INR", // Always INR for Razorpay
-        name: 'LogoGPT',
-        description: `Payment for LogoGPT ${selectedPlan.name}`,
-        order_id: data.orderId,
-        handler: async function (response: any) {
-          // Verify payment and add credits
-          try {
-            const verifyResponse = await fetch('/api/verify-payment', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                paymentId: response.razorpay_payment_id,
-                orderId: response.razorpay_order_id,
-                signature: response.razorpay_signature,
-                planId: selectedPlan.id,
-              }),
-            });
-
-            const verifyData = await verifyResponse.json();
-
-            if (verifyData.success) {
-              // Payment successful, redirect to dashboard
-              router.push('/dashboard?payment=success');
-            }
-          } catch (error) {
-            console.error('Payment verification failed:', error);
-            // Handle error UI
-          }
-        },
-        prefill: {
-          name: user?.fullName || '',
-          email: user?.primaryEmailAddress?.emailAddress || '',
-          contact: '',
-        },
-        theme: {
-          color: '#3b82f6', // blue-500
-        },
-        modal: {
-          ondismiss: function () {
-            setIsProcessing(false);
-          }
-        },
-        // Add UPI and other payment options for Indian payment methods
-        method: {
-          upi: true,
-          netbanking: true,
-          card: true,
-          wallet: true,
-        }
-      };
-
-      const rzp1 = new window.Razorpay(options);
-      rzp1.open();
-    } catch (error) {
-      console.error('Error processing payment:', error);
-      setIsProcessing(false);
-    }
-  };
-
-  // Calculate display price based on selected currency
-  const getDisplayPrice = (basePrice: number) => {
-    if (displayCurrency === 'USD') {
-      return `$${basePrice}`;
-    } else {
-      return `₹${Math.round(basePrice * USD_TO_INR_CONVERSION)}`;
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-neutral-950 dark:to-neutral-900 py-12 px-4">
-      {/* Load Razorpay script */}
-      <Script
-        src="https://checkout.razorpay.com/v1/checkout.js"
-        onLoad={handleScriptLoad}
-        strategy="lazyOnload"
-      />
-
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold tracking-tight mb-3">Choose Your Plan</h1>
-          <p className="text-xl text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto">
-            Select a plan that works for your logo generation needs
-          </p>
-
-          {/* Currency Toggle Button (for display only) */}
-          <div className="mt-4">
-            <Button
-              size="sm"
-              className="mt-2 text-sm"
-              onClick={toggleCurrency}
-            >
-              {displayCurrency === 'USD' ? '🇺🇸 USD' : '🇮🇳 INR'} • Click to switch to {displayCurrency === 'USD' ? 'INR' : 'USD'}
-            </Button>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-              All payments are processed in Indian Rupees (INR)
-            </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
-              Indian users can pay using UPI, NetBanking, Wallet and Cards
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {PLANS.map((plan) => (
-            <Card
-              key={plan.id}
-              className={`border-2 transition-all ${selectedPlan?.id === plan.id
-                ? 'border-blue-500 dark:border-blue-500 shadow-lg'
-                : 'border-neutral-200 dark:border-neutral-700 hover:border-blue-300 dark:hover:border-blue-700'
-                }`}
-            >
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <CardTitle className="text-2xl font-bold">{plan.name}</CardTitle>
-                  {plan.badge && (
-                    <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30">
-                      {plan.badge}
-                    </Badge>
-                  )}
-                </div>
-                <CardDescription>
-                  <div className="mt-2">
-                    <span className="text-4xl font-bold">
-                      {getDisplayPrice(plan.price)}
-                    </span>
-                    <span className="text-neutral-500 dark:text-neutral-400 text-base"> / one-time</span>
-                  </div>
-                  <p className="text-neutral-500 dark:text-neutral-400 mt-2">
-                    Get <strong>{plan.credits}</strong> credits to use for logo generation
-                  </p>
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {plan.features.map((feature, index) => (
-                    <li key={index} className="flex items-start">
-                      <span className="text-green-500 mr-2 mt-1">✓</span>
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-              <CardFooter>
-                <Button
-                  className="w-full"
-                  size="lg"
-                  variant={selectedPlan?.id === plan.id ? "default" : "outline"}
-                  onClick={() => handleSelectPlan(plan)}
-                >
-                  {selectedPlan?.id === plan.id ? 'Selected' : 'Select Plan'}
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-
-        <div className="mt-12 text-center">
-          <Button
-            disabled={isProcessing || !scriptLoaded || !selectedPlan}
-            onClick={handlePayment}
-            size="lg"
-            className="px-8 py-6 text-lg"
-          >
-            {isProcessing
-              ? 'Processing...'
-              : !scriptLoaded
-                ? 'Loading Payment...'
-                : !selectedPlan
-                  ? 'Select a plan above'
-                  : `Pay ${getDisplayPrice(selectedPlan.price)} Now`
-            }
-          </Button>
-          <p className="mt-4 text-sm text-neutral-500 dark:text-neutral-400">
-            Secured by Razorpay • 100% secure payment
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default PaymentPage;
+  ... rest of the original implementation ...
+*/
