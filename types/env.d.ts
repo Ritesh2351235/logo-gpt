@@ -11,5 +11,7 @@ declare namespace NodeJS {
     CLOUDINARY_CLOUD_NAME: string;
     CLOUDINARY_API_KEY: string;
     CLOUDINARY_API_SECRET: string;
+    EXCHANGE_RATE_HOST_ACCESS_KEY: string;
+    NEXT_PUBLIC_RAZORPAY_KEY_ID: string;
   }
 } 
