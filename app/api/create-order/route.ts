@@ -13,8 +13,27 @@ const PLANS = {
   pro: { amount: 10, credits: 80 },
 };
 
-// Define currency conversion for INR
-const USD_TO_INR_CONVERSION = 83; // Approximate conversion rate
+// --- Live USD to INR conversion with caching ---
+let cachedUsdToInrRate: number | undefined = undefined;
+let cachedUsdToInrTimestamp: number | undefined = undefined;
+const CACHE_DURATION_MS = 10 * 60 * 1000;
+
+async function getUsdToInrRate(): Promise<number> {
+  const now = Date.now();
+  if (cachedUsdToInrRate !== undefined && cachedUsdToInrTimestamp !== undefined && now - cachedUsdToInrTimestamp < CACHE_DURATION_MS) {
+    return cachedUsdToInrRate;
+  }
+  const accessKey = process.env.EXCHANGE_RATE_HOST_ACCESS_KEY;
+  const url = `https://api.exchangerate.host/live?access_key=${accessKey}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed to fetch USD to INR rate");
+  const data = await res.json();
+  if (!data.success || !data.quotes || !data.quotes.USDINR) throw new Error("Invalid rate data");
+  cachedUsdToInrRate = data.quotes.USDINR;
+  cachedUsdToInrTimestamp = now;
+  if (cachedUsdToInrRate === undefined) throw new Error("USD to INR rate is undefined");
+  return cachedUsdToInrRate;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,9 +58,15 @@ export async function POST(request: NextRequest) {
 
     // Get the amount from the selected plan
     const selectedPlan = PLANS[plan as keyof typeof PLANS];
-    
-    // Always convert to INR for the actual payment
-    const amountInINR = Math.round(selectedPlan.amount * USD_TO_INR_CONVERSION);
+    let amountInINR = selectedPlan.amount;
+
+    if (displayCurrency === "USD") {
+      // Use live USD to INR rate
+      const rate = await getUsdToInrRate();
+      amountInINR = Math.round(selectedPlan.amount * rate);
+    } else if (displayCurrency === "INR") {
+      amountInINR = selectedPlan.amount;
+    }
 
     // Create receipt ID
     const receiptId = "receipt_" + Math.random().toString(36).substring(2, 15);
